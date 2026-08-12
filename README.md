@@ -1,5 +1,7 @@
 # linear-viz
 
+**Live at [blockedby.dev](https://blockedby.dev).**
+
 A Linear project as a dependency graph — issues laid out left→right by their
 `blocks` relations, in a crisp near-monochrome UI where the only color is your
 workspace's own state colors.
