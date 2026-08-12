@@ -72,10 +72,6 @@ export interface ProjectsSnapshot {
 
 declare global {
   interface Window {
-    __SNAPSHOT__?: { kind: 'project'; ref: string; data: ProjectSnapshot } | {
-      kind: 'projects'
-      data: ProjectsSnapshot
-    }
     __READY__?: number
   }
 }

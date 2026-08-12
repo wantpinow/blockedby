@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ProjectSnapshot, ProjectsSnapshot } from '../types'
+import { AuthError, cachedProject, cachedProjects, fetchProject, fetchProjects } from './linear'
 
 interface Live<T> {
   data: T | null
@@ -9,55 +10,48 @@ interface Live<T> {
 }
 
 /**
- * Stale-while-revalidate over the local API:
- *  1. paint from the server-inlined snapshot (`window.__SNAPSHOT__`) if present
- *  2. else paint from the disk cache endpoint
- *  3. always revalidate against Linear in the background
- *  4. revalidate again on window focus (throttled) and every 90s while visible
+ * Stale-while-revalidate, fully client-side:
+ *  1. paint from the IndexedDB snapshot immediately
+ *  2. revalidate against Linear in the background
+ *  3. revalidate again on window focus (throttled) and every 90s while visible
+ * Auth failures are handled globally (the app flips to the key screen).
  */
-function useLive<T>(cachedUrl: string, freshUrl: string, seed: T | null): Live<T> {
-  const [data, setData] = useState<T | null>(seed)
+function useLive<T>(
+  getCached: () => Promise<T | null>,
+  getFresh: () => Promise<T>,
+  depKey: string,
+): Live<T> {
+  const [data, setData] = useState<T | null>(null)
   const [syncing, setSyncing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const lastFresh = useRef(0)
   const alive = useRef(true)
-  const seeded = useRef(seed !== null)
-
-  const fetchJson = useCallback(async (url: string): Promise<T> => {
-    const r = await fetch(url, { cache: 'no-store' })
-    const body = await r.json()
-    if (!r.ok) throw new Error(body?.error ?? `HTTP ${r.status}`)
-    return body as T
-  }, [])
 
   const refresh = useCallback(() => {
     setSyncing(true)
     lastFresh.current = Date.now()
-    fetchJson(freshUrl)
+    getFresh()
       .then((d) => {
         if (!alive.current) return
         setData(d)
         setError(null)
       })
       .catch((e: Error) => {
-        if (alive.current) setError(e.message)
+        if (alive.current && !(e instanceof AuthError)) setError(e.message)
       })
       .finally(() => {
         if (alive.current) setSyncing(false)
       })
-  }, [fetchJson, freshUrl])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [depKey])
 
   useEffect(() => {
     alive.current = true
-    if (!seeded.current) {
-      fetchJson(cachedUrl)
-        .then((d) => {
-          if (alive.current && d) setData((cur) => cur ?? d)
-        })
-        .catch((e: Error) => {
-          if (alive.current) setError((cur) => cur ?? e.message)
-        })
-    }
+    getCached()
+      .then((d) => {
+        if (alive.current && d) setData((cur) => cur ?? d)
+      })
+      .catch(() => {})
     refresh()
     const onFocus = () => {
       if (Date.now() - lastFresh.current > 15000) refresh()
@@ -76,25 +70,25 @@ function useLive<T>(cachedUrl: string, freshUrl: string, seed: T | null): Live<T
       document.removeEventListener('visibilitychange', onFocus)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cachedUrl, freshUrl])
+  }, [depKey])
 
   return { data, syncing, error, refresh }
 }
 
 export function useProject(ref: string): Live<ProjectSnapshot> {
-  const inline = window.__SNAPSHOT__
-  const seed = inline?.kind === 'project' && inline.ref === ref ? inline.data : null
   return useLive<ProjectSnapshot>(
-    `/api/project/${encodeURIComponent(ref)}`,
-    `/api/project/${encodeURIComponent(ref)}?fresh=1`,
-    seed,
+    () => cachedProject(ref),
+    () => fetchProject(ref),
+    `project:${ref}`,
   )
 }
 
 export function useProjects(): Live<ProjectsSnapshot> {
-  const inline = window.__SNAPSHOT__
-  const seed = inline?.kind === 'projects' ? inline.data : null
-  return useLive<ProjectsSnapshot>('/api/projects', '/api/projects?fresh=1', seed)
+  return useLive<ProjectsSnapshot>(
+    () => cachedProjects(),
+    () => fetchProjects(),
+    'projects',
+  )
 }
 
 /** re-render every `ms` so relative timestamps stay honest */

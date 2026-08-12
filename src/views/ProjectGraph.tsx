@@ -19,12 +19,14 @@ export function ProjectGraph({
   onSelectIssue,
   onBack,
   themeButton,
+  accountButton,
 }: {
   refId: string
   selectedIssue: string | null
   onSelectIssue: (identifier: string | null) => void
   onBack: () => void
   themeButton: React.ReactNode
+  accountButton: React.ReactNode
 }) {
   const { data: snap, syncing, error, refresh } = useProject(refId)
   const now = useNow()
@@ -139,6 +141,7 @@ export function ProjectGraph({
           typeFilter={typeFilter}
           setTypeFilter={setTypeFilter}
           themeButton={themeButton}
+          accountButton={accountButton}
           error={null}
           now={now}
         />
@@ -203,6 +206,7 @@ export function ProjectGraph({
         typeFilter={typeFilter}
         setTypeFilter={setTypeFilter}
         themeButton={themeButton}
+        accountButton={accountButton}
         error={error}
         now={now}
       />
@@ -356,6 +360,7 @@ function Header({
   typeFilter,
   setTypeFilter,
   themeButton,
+  accountButton,
   error,
   now,
 }: {
@@ -368,6 +373,7 @@ function Header({
   typeFilter: Set<StateType>
   setTypeFilter: (s: Set<StateType>) => void
   themeButton: React.ReactNode
+  accountButton: React.ReactNode
   error: string | null
   now: number
 }) {
@@ -470,6 +476,7 @@ function Header({
           className={`sync-dot${syncing ? ' is-syncing' : error ? ' is-error' : ''}`}
           title={error ? `sync failed: ${error} — showing last snapshot` : snap ? `synced ${timeAgo(snap.fetchedAt, now)}` : ''}
         />
+        {accountButton}
         {themeButton}
       </header>
       {snap && <ProgressStrip snap={snap} counts={counts} />}

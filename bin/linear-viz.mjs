@@ -101,9 +101,6 @@ function cleanRef(r) {
 const target = ref ? cleanRef(ref) : null
 const url = target ? `${BASE}/p/${encodeURIComponent(target)}` : BASE
 
-// warm the cache for this ref in the background so the page's fresh pass is quick
-if (target) fetch(`${BASE}/api/project/${encodeURIComponent(target)}`).catch(() => {})
-
 if (flags.has('--no-open')) {
   console.log(url)
 } else {

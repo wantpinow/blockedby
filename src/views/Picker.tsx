@@ -7,9 +7,11 @@ import { Avatar } from '../components/bits'
 export function Picker({
   onOpen,
   themeButton,
+  accountButton,
 }: {
   onOpen: (ref: string) => void
   themeButton: React.ReactNode
+  accountButton: React.ReactNode
 }) {
   const { data, syncing, error, refresh } = useProjects()
   const now = useNow(30000)
@@ -69,6 +71,7 @@ export function Picker({
           </svg>
         </button>
         <span className={`sync-dot${syncing ? ' is-syncing' : error ? ' is-error' : ''}`} />
+        {accountButton}
         {themeButton}
       </header>
 

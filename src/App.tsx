@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRoute } from './lib/router'
+import { forgetToken, initToken, setAuthErrorHandler, type Viewer } from './lib/linear'
+import { kvClear, kvGet } from './lib/idb'
 import { Picker } from './views/Picker'
 import { ProjectGraph } from './views/ProjectGraph'
+import { Welcome } from './views/Welcome'
 
 type Theme = 'light' | 'dark'
 
@@ -24,9 +27,25 @@ function useTheme(): [Theme, () => void] {
   return [theme, toggle]
 }
 
+type Auth =
+  | { kind: 'checking' }
+  | { kind: 'locked'; notice?: string }
+  | { kind: 'ready' }
+
 export default function App() {
   const { route, openProject, openPicker, selectIssue } = useRoute()
   const [theme, toggleTheme] = useTheme()
+  const [auth, setAuth] = useState<Auth>({ kind: 'checking' })
+
+  useEffect(() => {
+    setAuthErrorHandler(() =>
+      setAuth({
+        kind: 'locked',
+        notice: 'Linear rejected the stored key — it may have been revoked. Paste a fresh one.',
+      }),
+    )
+    initToken().then((has) => setAuth(has ? { kind: 'ready' } : { kind: 'locked' }))
+  }, [])
 
   const themeButton = (
     <button type="button" className="icon-btn" onClick={toggleTheme} aria-label="Toggle theme">
@@ -54,8 +73,30 @@ export default function App() {
     </button>
   )
 
+  if (auth.kind === 'checking') return null
+
+  if (auth.kind === 'locked') {
+    return (
+      <Welcome
+        notice={auth.notice}
+        themeButton={themeButton}
+        onDone={() => setAuth({ kind: 'ready' })}
+      />
+    )
+  }
+
+  const accountButton = (
+    <AccountMenu
+      onSignOut={async () => {
+        await forgetToken()
+        await kvClear()
+        setAuth({ kind: 'locked' })
+      }}
+    />
+  )
+
   if (!route.ref) {
-    return <Picker onOpen={openProject} themeButton={themeButton} />
+    return <Picker onOpen={openProject} themeButton={themeButton} accountButton={accountButton} />
   }
   return (
     <ProjectGraph
@@ -65,6 +106,70 @@ export default function App() {
       onSelectIssue={selectIssue}
       onBack={openPicker}
       themeButton={themeButton}
+      accountButton={accountButton}
     />
+  )
+}
+
+function AccountMenu({ onSignOut }: { onSignOut: () => void }) {
+  const [open, setOpen] = useState(false)
+  const [viewer, setViewer] = useState<Viewer | null>(null)
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    kvGet<Viewer>('viewer').then((v) => setViewer(v ?? null))
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: PointerEvent) => {
+      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('pointerdown', onDown)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('pointerdown', onDown)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  return (
+    <div className="acct" ref={wrapRef}>
+      <button
+        type="button"
+        className={`icon-btn${open ? ' is-open' : ''}`}
+        onClick={() => setOpen((o) => !o)}
+        aria-label="Account"
+        title={viewer ? `${viewer.name} · ${viewer.org}` : 'Account'}
+      >
+        <svg viewBox="0 0 16 16" width="13" height="13">
+          <path
+            d="M10.3 5.7 a2.7 2.7 0 1 0 -3.8 3.8 L2.6 13.4 l0 0 M5 11 l1.4 1.4 M6.9 9.1 l1.4 1.4"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <circle cx="10.6" cy="5.4" r="3.1" fill="none" stroke="currentColor" strokeWidth="1.4" />
+        </svg>
+      </button>
+      {open && (
+        <div className="menu" role="menu">
+          <div className="menu-head">
+            <div className="menu-name">{viewer?.name ?? 'Connected'}</div>
+            <div className="menu-sub">
+              {viewer ? `${viewer.email} · ${viewer.org}` : 'Linear API key active'}
+            </div>
+          </div>
+          <button type="button" className="menu-item is-danger" onClick={onSignOut} role="menuitem">
+            Remove key & local data
+          </button>
+        </div>
+      )}
+    </div>
   )
 }
