@@ -1,17 +1,17 @@
-# linear-viz
+# blockedBy
 
 **Live at [blockedby.dev](https://blockedby.dev).**
 
-A Linear project as a dependency graph — issues laid out left→right by their
+Linear projects as dependency graphs — issues laid out left→right by their
 `blocks` relations, in a crisp near-monochrome UI where the only color is your
 workspace's own state colors.
 
 ```
-linear-viz                    # project picker
-linear-viz Workbench          # name fragment
-linear-viz cbba11b10f16       # slugId (or full UUID / full slug)
-linear-viz https://linear.app/alaro/project/workbench-...-cbba11b10f16
-linear-viz --stop             # stop the background server
+blockedby                    # project picker
+blockedby Workbench          # name fragment
+blockedby cbba11b10f16       # slugId (or full UUID / full slug)
+blockedby https://linear.app/alaro/project/workbench-...-cbba11b10f16
+blockedby --stop             # stop the background server
 ```
 
 ## What you get
@@ -30,24 +30,25 @@ linear-viz --stop             # stop the background server
 - **Filters** — state-type chips and `/` search dim everything else.
 - Light/dark, `Esc` closes, double-click re-fits, scroll pans, pinch zooms.
 
-## Instant loads
+## Fully client-side
 
-`linear-viz <ref>` starts (or reuses) a tiny local daemon on `:4720` that
-keeps a disk cache in `~/.cache/linear-viz`. Page HTML ships with the cached
-snapshot inlined, so the graph is interactive in ~40ms; fresh data
-revalidates from Linear in the background (and again on focus / every 90s).
-First-ever visit to a project fetches live (~1s) and caches.
+There is no backend. The browser talks straight to `api.linear.app` (their
+CORS allows it), snapshots live in IndexedDB for instant repaint with
+background revalidation, and your personal API key is AES-GCM-encrypted under
+a non-extractable CryptoKey in this browser's IndexedDB — it is sent to
+Linear and nowhere else. First visit shows a welcome screen that asks for a
+key; the account menu (key icon) removes it again.
 
-## Setup
+## Local CLI
 
 ```
 npm install
 npm run build
-npm link        # puts `linear-viz` on your PATH
+npm link        # puts `blockedby` on your PATH
 ```
 
-Auth: put a personal API key in `.env` (gitignored) as
-`LINEAR_API_KEY=lin_api_…`. The server binds 127.0.0.1 only; the key never
-leaves the machine.
+`blockedby <ref>` starts (or reuses) a tiny static server on `:4720` — it
+serves the bundle and holds no secrets — then opens the browser.
 
-Dev: `npm run dev` (vite on :5210 with the same API mounted).
+Deploys: static on Vercel (`npx vercel deploy --prod --yes`), SPA rewrite via
+`vercel.json`. Dev: `npm run dev` (vite on :5210).

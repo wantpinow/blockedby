@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * linear-viz — open a Linear project as a dependency graph.
+ * blockedby — open a Linear project as a dependency graph.
  *
- *   linear-viz                    open the project picker
- *   linear-viz <ref>              open one project (UUID, slugId, full slug,
- *                                 pasted Linear URL, or a name fragment)
- *   linear-viz --stop             stop the background server
- *   linear-viz --no-open          start/ensure the server, print the URL only
+ *   blockedby                    open the project picker
+ *   blockedby <ref>              open one project (UUID, slugId, full slug,
+ *                                pasted Linear URL, or a name fragment)
+ *   blockedby --stop             stop the background server
+ *   blockedby --no-open          start/ensure the server, print the URL only
  */
 import { spawn, spawnSync } from 'node:child_process'
 import fs from 'node:fs'
@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const APP_ROOT = path.resolve(here, '..')
-const PORT = Number(process.env.LINEAR_VIZ_PORT || 4720)
+const PORT = Number(process.env.BLOCKEDBY_PORT || process.env.LINEAR_VIZ_PORT || 4720)
 const BASE = `http://localhost:${PORT}`
 
 const args = process.argv.slice(2)
@@ -23,13 +23,13 @@ const flags = new Set(args.filter((a) => a.startsWith('--')))
 const ref = args.find((a) => !a.startsWith('--')) ?? null
 
 if (flags.has('--help') || flags.has('-h')) {
-  console.log(`linear-viz — Linear project dependency graphs
+  console.log(`blockedBy — Linear projects as dependency graphs · blockedby.dev
 
 usage:
-  linear-viz                 open the project picker
-  linear-viz <project>       UUID, slugId, full slug, Linear URL, or name fragment
-  linear-viz --stop          stop the background server
-  linear-viz --no-open       ensure server, print URL instead of opening`)
+  blockedby                 open the project picker
+  blockedby <project>       UUID, slugId, full slug, Linear URL, or name fragment
+  blockedby --stop          stop the background server
+  blockedby --no-open       ensure server, print URL instead of opening`)
   process.exit(0)
 }
 
@@ -40,7 +40,7 @@ async function health(timeoutMs = 400) {
     const r = await fetch(`${BASE}/api/health`, { signal: ctl.signal })
     clearTimeout(t)
     const j = await r.json()
-    return j?.app === 'linear-viz'
+    return j?.app === 'blockedby'
   } catch {
     return false
   }
@@ -49,19 +49,19 @@ async function health(timeoutMs = 400) {
 if (flags.has('--stop')) {
   if (await health()) {
     await fetch(`${BASE}/api/shutdown`, { method: 'POST' }).catch(() => {})
-    console.log('linear-viz: server stopped')
+    console.log('blockedby: server stopped')
   } else {
-    console.log('linear-viz: no server running')
+    console.log('blockedby: no server running')
   }
   process.exit(0)
 }
 
 // first run convenience: build the app if dist/ is missing
 if (!fs.existsSync(path.join(APP_ROOT, 'dist', 'index.html'))) {
-  console.log('linear-viz: first run — building the app…')
+  console.log('blockedby: first run — building the app…')
   const r = spawnSync('npm', ['run', 'build'], { cwd: APP_ROOT, stdio: 'inherit' })
   if (r.status !== 0) {
-    console.error('linear-viz: build failed')
+    console.error('blockedby: build failed')
     process.exit(1)
   }
 }
@@ -83,7 +83,7 @@ if (!(await health())) {
     await new Promise((r) => setTimeout(r, 120))
   }
   if (!up) {
-    console.error(`linear-viz: server did not come up on :${PORT}`)
+    console.error(`blockedby: server did not come up on :${PORT}`)
     process.exit(1)
   }
 }
@@ -106,5 +106,5 @@ if (flags.has('--no-open')) {
 } else {
   const opener = process.platform === 'darwin' ? 'open' : 'xdg-open'
   spawn(opener, [url], { detached: true, stdio: 'ignore' }).unref()
-  console.log(`linear-viz → ${url}`)
+  console.log(`blockedby → ${url}`)
 }

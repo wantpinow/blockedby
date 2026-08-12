@@ -42,7 +42,7 @@ export function ProjectGraph({
   }, [model])
 
   useEffect(() => {
-    if (snap) document.title = `${snap.project.name} · linear-viz`
+    if (snap) document.title = `${snap.project.name} · blockedBy`
   }, [snap])
 
   // ---------- pan / zoom ----------

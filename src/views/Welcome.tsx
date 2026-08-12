@@ -17,7 +17,7 @@ export function Welcome({
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    document.title = 'linear-viz'
+    document.title = 'blockedBy'
     inputRef.current?.focus()
   }, [])
 
@@ -56,7 +56,7 @@ export function Welcome({
           </svg>
         </div>
 
-        <h1 className="welcome-title">linear-viz</h1>
+        <h1 className="welcome-title">blockedBy</h1>
         <p className="welcome-sub">
           Your Linear projects as live dependency graphs —
           <br />

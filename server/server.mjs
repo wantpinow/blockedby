@@ -1,7 +1,7 @@
 /**
- * linear-viz static server. Everything real happens in the browser — this
+ * blockedBy static server. Everything real happens in the browser — this
  * process only serves the built bundle from dist/ on 127.0.0.1 so the
- * `linear-viz` command has a stable local URL to open. It holds no API key
+ * `blockedby` command has a stable local URL to open. It holds no API key
  * and makes no network requests.
  */
 import fs from 'node:fs'
@@ -9,12 +9,12 @@ import http from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-export const VERSION = '0.2.0'
+export const VERSION = '0.3.0'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const APP_ROOT = path.resolve(here, '..')
 const DIST = path.join(APP_ROOT, 'dist')
-const PORT = Number(process.env.LINEAR_VIZ_PORT || 4720)
+const PORT = Number(process.env.BLOCKEDBY_PORT || process.env.LINEAR_VIZ_PORT || 4720)
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -38,7 +38,7 @@ const server = http.createServer((req, res) => {
   const p = decodeURIComponent(url.pathname)
 
   if (p === '/api/health') {
-    return send(res, 200, MIME['.json'], JSON.stringify({ ok: true, app: 'linear-viz', version: VERSION }))
+    return send(res, 200, MIME['.json'], JSON.stringify({ ok: true, app: 'blockedby', version: VERSION }))
   }
   if (p === '/api/shutdown' && req.method === 'POST') {
     send(res, 200, MIME['.json'], JSON.stringify({ ok: true }))
@@ -70,12 +70,12 @@ const server = http.createServer((req, res) => {
 
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
-    console.error(`linear-viz: port ${PORT} already in use`)
+    console.error(`blockedby: port ${PORT} already in use`)
     process.exit(2)
   }
   throw err
 })
 
 server.listen(PORT, '127.0.0.1', () => {
-  console.log(`linear-viz v${VERSION} → http://localhost:${PORT}`)
+  console.log(`blockedBy v${VERSION} → http://localhost:${PORT}`)
 })

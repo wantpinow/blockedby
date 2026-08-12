@@ -18,7 +18,7 @@ export function Picker({
   const [query, setQuery] = useState('')
 
   useEffect(() => {
-    document.title = 'linear-viz'
+    document.title = 'blockedBy'
   }, [])
 
   const projects = useMemo(() => {
@@ -39,7 +39,7 @@ export function Picker({
             <path d="M11 18.5 L14 13.5 M18.5 12 L21.5 16.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
         </span>
-        <span className="proj-name">linear-viz</span>
+        <span className="proj-name">blockedBy</span>
         <span className="muted small proj-count">
           {projects.length} project{projects.length === 1 ? '' : 's'}
         </span>

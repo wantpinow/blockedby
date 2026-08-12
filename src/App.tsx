@@ -10,7 +10,7 @@ type Theme = 'light' | 'dark'
 
 function useTheme(): [Theme, () => void] {
   const [theme, setTheme] = useState<Theme>(() => {
-    const stored = localStorage.getItem('linear-viz-theme')
+    const stored = localStorage.getItem('blockedby-theme') ?? localStorage.getItem('linear-viz-theme')
     if (stored === 'light' || stored === 'dark') return stored
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   })
@@ -20,7 +20,7 @@ function useTheme(): [Theme, () => void] {
   const toggle = useCallback(() => {
     setTheme((t) => {
       const next = t === 'light' ? 'dark' : 'light'
-      localStorage.setItem('linear-viz-theme', next)
+      localStorage.setItem('blockedby-theme', next)
       return next
     })
   }, [])

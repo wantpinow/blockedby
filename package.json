@@ -1,10 +1,10 @@
 {
-  "name": "linear-viz",
-  "version": "0.2.0",
+  "name": "blockedby",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "bin": {
-    "linear-viz": "bin/linear-viz.mjs"
+    "blockedby": "bin/blockedby.mjs"
   },
   "scripts": {
     "dev": "vite",
