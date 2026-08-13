@@ -48,6 +48,8 @@ export function buildAgentPrompt(issue: Issue, snap: ProjectSnapshot, ctx: Promp
 
   // ---------------------------------------------------------------- header
   L.push(
+    `Note: the title of this chat should be "${issue.identifier}: ${issue.title}"`,
+    ``,
     `I want you to implement a Linear ticket for me. Work through the phases below in order — phase 2 ends in a hard STOP for my review; do not write implementation code before my go-ahead.`,
     ``,
     `## The ticket`,
