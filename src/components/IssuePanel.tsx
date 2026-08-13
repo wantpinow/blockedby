@@ -1,7 +1,10 @@
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type { Issue, ProjectSnapshot } from '../types'
 import { stateOf, startedFraction, timeAgo, isActionable } from '../lib/state'
 import { useNow } from '../lib/useData'
+import { buildAgentPrompt } from '../lib/agentPrompt'
+import { kvGet } from '../lib/idb'
+import type { Viewer } from '../lib/linear'
 import { StateIcon } from './StateIcon'
 import { Avatar, IssueChip, PriorityIcon } from './bits'
 
@@ -22,6 +25,16 @@ export function IssuePanel({
 }) {
   const now = useNow()
   const st = stateOf(issue, snap)
+  const [copied, setCopied] = useState(false)
+  const [viewerName, setViewerName] = useState<string | null>(null)
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    kvGet<Viewer>('viewer').then((v) => setViewerName(v?.name ?? null))
+    return () => {
+      if (copyTimer.current) clearTimeout(copyTimer.current)
+    }
+  }, [])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -30,6 +43,25 @@ export function IssuePanel({
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
+
+  const copyPrompt = async () => {
+    const text = buildAgentPrompt(issue, snap, { byId, viewerName })
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.style.position = 'fixed'
+      ta.style.opacity = '0'
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      ta.remove()
+    }
+    setCopied(true)
+    if (copyTimer.current) clearTimeout(copyTimer.current)
+    copyTimer.current = setTimeout(() => setCopied(false), 1600)
+  }
 
   const blockers = issue.blockedBy.map((id) => byId.get(id)).filter(Boolean) as Issue[]
   const blocking = issue.blocks.map((id) => byId.get(id)).filter(Boolean) as Issue[]
@@ -44,6 +76,48 @@ export function IssuePanel({
             <span className="mono panel-id">{issue.identifier}</span>
             {ready && <span className="chip chip-ready">ready</span>}
             <span className="spacer" />
+            <button
+              type="button"
+              className={`agent-btn${copied ? ' is-copied' : ''}`}
+              onClick={copyPrompt}
+              title="Copy a ready-to-paste kickoff prompt for a coding agent — branch strategy, stacking, and dependency flags derived from this graph"
+            >
+              {copied ? (
+                <>
+                  <svg viewBox="0 0 16 16" width="11" height="11">
+                    <path
+                      d="M3.5 8.5 L6.5 11.5 L12.5 4.5"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  Copied
+                </>
+              ) : (
+                <>
+                  <svg viewBox="0 0 16 16" width="11" height="11">
+                    <path
+                      d="M2.5 3.5 L6 7 L2.5 10.5"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M8 11.5 H13.5"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  Agent prompt
+                </>
+              )}
+            </button>
             <a className="linear-btn" href={issue.url} target="_blank" rel="noreferrer">
               Open in Linear
               <svg viewBox="0 0 16 16" width="11" height="11">
