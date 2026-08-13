@@ -875,14 +875,163 @@ button.chip:hover {
   color: var(--urgent);
 }
 
+/* ————————————————————————————————————————————————— identity */
+
+.me-btn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: var(--text-2);
+  flex: none;
+  transition: background 0.12s ease, box-shadow 0.12s ease;
+}
+
+.me-btn:hover,
+.me-btn.is-open {
+  background: var(--hover);
+  box-shadow: 0 0 0 1px var(--border-strong);
+}
+
+.mine-chip {
+  gap: 6px;
+}
+
+.mine-chip .avatar {
+  margin-left: -3px;
+}
+
+.mini-spinner {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.6px solid var(--border-strong);
+  border-top-color: var(--text-2);
+  animation: spin 0.7s linear infinite;
+  flex: none;
+}
+
+.menu-users {
+  min-width: 250px;
+}
+
+.menu-search {
+  width: calc(100% - 10px);
+  margin: 2px 5px 6px;
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--bg);
+  outline: none;
+  font-size: 12px;
+}
+
+.menu-search:focus {
+  border-color: var(--border-strong);
+}
+
+.menu-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.menu-user {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.menu-user-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu-check {
+  color: var(--accent);
+  flex: none;
+}
+
 /* ————————————————————————————————————————————————— picker */
 
 .picker {
   flex: 1;
   overflow-y: auto;
-  padding: 22px 24px 48px;
+  padding: 10px 24px 48px;
   display: flex;
   flex-direction: column;
+  gap: 6px;
+}
+
+.team-sec {
+  display: flex;
+  flex-direction: column;
+}
+
+.team-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 4px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(6px);
+  text-align: left;
+  border-radius: 7px;
+  transition: color 0.12s ease;
+  color: var(--text-2);
+  max-width: 1240px;
+}
+
+.team-head:hover {
+  color: var(--text);
+}
+
+.team-chevron {
+  flex: none;
+  color: var(--text-3);
+  transition: transform 0.16s ease;
+}
+
+.team-chevron.is-open {
+  transform: rotate(90deg);
+}
+
+.team-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 3px;
+  flex: none;
+}
+
+.team-name {
+  font-weight: 600;
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+.team-key {
+  font-size: 10.5px;
+  color: var(--text-3);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0 5px;
+  line-height: 15px;
+}
+
+.team-count {
+  font-size: 12px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.team-hidden {
+  margin-left: 4px;
+  font-style: italic;
 }
 
 .cards {
@@ -890,6 +1039,7 @@ button.chip:hover {
   grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
   gap: 12px;
   max-width: 1240px;
+  padding: 2px 0 14px;
 }
 
 .card {

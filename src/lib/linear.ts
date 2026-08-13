@@ -6,7 +6,14 @@
  */
 import { kvGet, kvSet } from './idb'
 import * as vault from './vault'
-import type { Person, ProjectSnapshot, ProjectsSnapshot, WorkflowState } from '../types'
+import type {
+  MineSnapshot,
+  Person,
+  ProjectSnapshot,
+  ProjectsSnapshot,
+  UsersSnapshot,
+  WorkflowState,
+} from '../types'
 
 const LINEAR_URL = 'https://api.linear.app/graphql'
 
@@ -80,6 +87,7 @@ async function gql<T>(query: string, variables: Record<string, unknown>, keyOver
 const PROJECT_FIELDS = `
   id name slugId color icon state progress url targetDate startedAt completedAt updatedAt
   lead { id name displayName avatarUrl initials }
+  teams(first: 6) { nodes { id name key color } }
 `
 
 const ISSUE_PAGE = `
@@ -113,6 +121,28 @@ const PROJECTS_LIST = `
 `
 
 const VIEWER = `query { viewer { name displayName email organization { name } } }`
+
+const USERS = `
+  query {
+    users(first: 250, filter: { active: { eq: true } }) {
+      nodes { id name displayName email avatarUrl initials }
+    }
+  }
+`
+
+const MINE = `
+  query Mine($userId: ID, $after: String) {
+    issues(
+      first: 250
+      after: $after
+      orderBy: updatedAt
+      filter: { assignee: { id: { eq: $userId } } }
+    ) {
+      pageInfo { hasNextPage endCursor }
+      nodes { project { id } }
+    }
+  }
+`
 
 export interface Viewer {
   name: string
@@ -158,6 +188,12 @@ function projectInfo(p: any) {
     targetDate: (p.targetDate ?? null) as string | null,
     updatedAt: p.updatedAt as string,
     lead: person(p.lead),
+    teams: ((p.teams?.nodes ?? []) as any[]).map((t) => ({
+      id: t.id as string,
+      name: t.name as string,
+      key: t.key as string,
+      color: (t.color ?? null) as string | null,
+    })),
   }
 }
 
@@ -306,7 +342,52 @@ export async function fetchProject(ref: string): Promise<ProjectSnapshot> {
   return snapshot
 }
 
+export async function fetchUsers(): Promise<UsersSnapshot> {
+  const d: any = await gql(USERS, {})
+  const snapshot: UsersSnapshot = {
+    fetchedAt: new Date().toISOString(),
+    users: (d.users.nodes as any[])
+      .map((u) => ({
+        id: u.id as string,
+        name: (u.displayName || u.name) as string,
+        email: u.email as string,
+        avatarUrl: (u.avatarUrl ?? null) as string | null,
+        initials: (u.initials ?? String(u.displayName || u.name || '?').slice(0, 2)).toUpperCase(),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+  }
+  await kvSet('users', snapshot)
+  return snapshot
+}
+
+/** projects containing issues assigned to this user (3 pages of recent assignments) */
+export async function fetchMine(userId: string): Promise<MineSnapshot> {
+  const ids = new Set<string>()
+  let after: string | null = null
+  for (let page = 0; page < 3; page++) {
+    const d: any = await gql(MINE, { userId, after })
+    for (const n of d.issues.nodes) if (n.project?.id) ids.add(n.project.id)
+    if (!d.issues.pageInfo.hasNextPage) break
+    after = d.issues.pageInfo.endCursor
+  }
+  const snapshot: MineSnapshot = {
+    fetchedAt: new Date().toISOString(),
+    userId,
+    projectIds: [...ids],
+  }
+  await kvSet(`mine-${userId}`, snapshot)
+  return snapshot
+}
+
 // ---------------------------------------------------------------- cache
+
+export async function cachedUsers(): Promise<UsersSnapshot | null> {
+  return (await kvGet<UsersSnapshot>('users')) ?? null
+}
+
+export async function cachedMine(userId: string): Promise<MineSnapshot | null> {
+  return (await kvGet<MineSnapshot>(`mine-${userId}`)) ?? null
+}
 
 export async function cachedProject(ref: string): Promise<ProjectSnapshot | null> {
   const known = await aliases()

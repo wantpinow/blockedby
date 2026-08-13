@@ -44,6 +44,13 @@ export interface Issue {
   canceledAt: string | null
 }
 
+export interface TeamInfo {
+  id: string
+  name: string
+  key: string
+  color: string | null
+}
+
 export interface ProjectInfo {
   id: string
   name: string
@@ -56,6 +63,27 @@ export interface ProjectInfo {
   targetDate: string | null
   updatedAt: string
   lead: Person | null
+  teams: TeamInfo[]
+}
+
+export interface UserInfo {
+  id: string
+  name: string
+  email: string
+  avatarUrl: string | null
+  initials: string
+}
+
+export interface UsersSnapshot {
+  fetchedAt: string
+  users: UserInfo[]
+}
+
+/** project ids containing issues assigned to a given user */
+export interface MineSnapshot {
+  fetchedAt: string
+  userId: string
+  projectIds: string[]
 }
 
 export interface ProjectSnapshot {

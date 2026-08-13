@@ -1,6 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ProjectSnapshot, ProjectsSnapshot } from '../types'
-import { AuthError, cachedProject, cachedProjects, fetchProject, fetchProjects } from './linear'
+import type { MineSnapshot, ProjectSnapshot, ProjectsSnapshot, UsersSnapshot } from '../types'
+import {
+  AuthError,
+  cachedMine,
+  cachedProject,
+  cachedProjects,
+  cachedUsers,
+  fetchMine,
+  fetchProject,
+  fetchProjects,
+  fetchUsers,
+} from './linear'
 
 interface Live<T> {
   data: T | null
@@ -89,6 +99,26 @@ export function useProjects(): Live<ProjectsSnapshot> {
     () => fetchProjects(),
     'projects',
   )
+}
+
+export function useUsers(): Live<UsersSnapshot> {
+  return useLive<UsersSnapshot>(
+    () => cachedUsers(),
+    () => fetchUsers(),
+    'users',
+  )
+}
+
+const EMPTY_MINE: MineSnapshot = { fetchedAt: '', userId: '', projectIds: [] }
+
+/** projects containing issues assigned to `userId`; inert when no user picked */
+export function useMine(userId: string | null): Live<MineSnapshot> {
+  const live = useLive<MineSnapshot>(
+    () => (userId ? cachedMine(userId) : Promise.resolve(null)),
+    () => (userId ? fetchMine(userId) : Promise.resolve(EMPTY_MINE)),
+    `mine:${userId ?? 'none'}`,
+  )
+  return userId ? live : { ...live, data: null }
 }
 
 /** re-render every `ms` so relative timestamps stay honest */
