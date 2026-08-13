@@ -66,19 +66,6 @@ export interface ProjectInfo {
   teams: TeamInfo[]
 }
 
-export interface UserInfo {
-  id: string
-  name: string
-  email: string
-  avatarUrl: string | null
-  initials: string
-}
-
-export interface UsersSnapshot {
-  fetchedAt: string
-  users: UserInfo[]
-}
-
 /** project ids containing issues assigned to a given user */
 export interface MineSnapshot {
   fetchedAt: string

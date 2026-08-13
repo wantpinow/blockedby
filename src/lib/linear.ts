@@ -11,7 +11,6 @@ import type {
   Person,
   ProjectSnapshot,
   ProjectsSnapshot,
-  UsersSnapshot,
   WorkflowState,
 } from '../types'
 
@@ -120,15 +119,7 @@ const PROJECTS_LIST = `
   }
 `
 
-const VIEWER = `query { viewer { name displayName email organization { name } } }`
-
-const USERS = `
-  query {
-    users(first: 250, filter: { active: { eq: true } }) {
-      nodes { id name displayName email avatarUrl initials }
-    }
-  }
-`
+const VIEWER = `query { viewer { id name displayName email avatarUrl initials organization { name } } }`
 
 const MINE = `
   query Mine($userId: ID, $after: String) {
@@ -145,21 +136,35 @@ const MINE = `
 `
 
 export interface Viewer {
+  id: string
   name: string
   email: string
   org: string
+  avatarUrl: string | null
+  initials: string
+}
+
+function viewerOf(d: any): Viewer {
+  return {
+    id: d.viewer.id,
+    name: d.viewer.displayName || d.viewer.name,
+    email: d.viewer.email,
+    org: d.viewer.organization.name,
+    avatarUrl: d.viewer.avatarUrl ?? null,
+    initials: (d.viewer.initials ?? String(d.viewer.displayName || '?').slice(0, 2)).toUpperCase(),
+  }
 }
 
 /** used by the welcome screen — checks a pasted key before storing it */
 export async function validateKey(key: string): Promise<Viewer> {
-  const d = await gql<{
-    viewer: { name: string; displayName: string; email: string; organization: { name: string } }
-  }>(VIEWER, {}, key)
-  return {
-    name: d.viewer.displayName || d.viewer.name,
-    email: d.viewer.email,
-    org: d.viewer.organization.name,
-  }
+  return viewerOf(await gql<any>(VIEWER, {}, key))
+}
+
+/** who the stored key belongs to — refreshed on boot, cached in IDB */
+export async function fetchViewer(): Promise<Viewer> {
+  const v = viewerOf(await gql<any>(VIEWER, {}))
+  await kvSet('viewer', v)
+  return v
 }
 
 // ---------------------------------------------------------------- helpers
@@ -342,24 +347,6 @@ export async function fetchProject(ref: string): Promise<ProjectSnapshot> {
   return snapshot
 }
 
-export async function fetchUsers(): Promise<UsersSnapshot> {
-  const d: any = await gql(USERS, {})
-  const snapshot: UsersSnapshot = {
-    fetchedAt: new Date().toISOString(),
-    users: (d.users.nodes as any[])
-      .map((u) => ({
-        id: u.id as string,
-        name: (u.displayName || u.name) as string,
-        email: u.email as string,
-        avatarUrl: (u.avatarUrl ?? null) as string | null,
-        initials: (u.initials ?? String(u.displayName || u.name || '?').slice(0, 2)).toUpperCase(),
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name)),
-  }
-  await kvSet('users', snapshot)
-  return snapshot
-}
-
 /** projects containing issues assigned to this user (3 pages of recent assignments) */
 export async function fetchMine(userId: string): Promise<MineSnapshot> {
   const ids = new Set<string>()
@@ -380,10 +367,6 @@ export async function fetchMine(userId: string): Promise<MineSnapshot> {
 }
 
 // ---------------------------------------------------------------- cache
-
-export async function cachedUsers(): Promise<UsersSnapshot | null> {
-  return (await kvGet<UsersSnapshot>('users')) ?? null
-}
 
 export async function cachedMine(userId: string): Promise<MineSnapshot | null> {
   return (await kvGet<MineSnapshot>(`mine-${userId}`)) ?? null

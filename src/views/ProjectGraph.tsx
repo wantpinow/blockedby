@@ -471,11 +471,8 @@ function Header({
               strokeLinejoin="round"
             />
           </svg>
+          {!syncing && <span className={`sync-badge${error ? ' is-error' : ''}`} />}
         </button>
-        <span
-          className={`sync-dot${syncing ? ' is-syncing' : error ? ' is-error' : ''}`}
-          title={error ? `sync failed: ${error} — showing last snapshot` : snap ? `synced ${timeAgo(snap.fetchedAt, now)}` : ''}
-        />
         {accountButton}
         {themeButton}
       </header>

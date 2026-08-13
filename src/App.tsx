@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRoute } from './lib/router'
-import { forgetToken, initToken, setAuthErrorHandler, type Viewer } from './lib/linear'
-import { kvClear, kvGet } from './lib/idb'
+import { forgetToken, initToken, setAuthErrorHandler } from './lib/linear'
+import { useViewer } from './lib/useData'
+import { kvClear } from './lib/idb'
+import { Avatar } from './components/bits'
 import { Picker } from './views/Picker'
 import { ProjectGraph } from './views/ProjectGraph'
 import { Welcome } from './views/Welcome'
@@ -130,12 +132,8 @@ export default function App() {
 
 function AccountMenu({ onSignOut }: { onSignOut: () => void }) {
   const [open, setOpen] = useState(false)
-  const [viewer, setViewer] = useState<Viewer | null>(null)
+  const viewer = useViewer()
   const wrapRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    kvGet<Viewer>('viewer').then((v) => setViewer(v ?? null))
-  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -157,29 +155,36 @@ function AccountMenu({ onSignOut }: { onSignOut: () => void }) {
     <div className="acct" ref={wrapRef}>
       <button
         type="button"
-        className={`icon-btn${open ? ' is-open' : ''}`}
+        className={`me-btn${open ? ' is-open' : ''}`}
         onClick={() => setOpen((o) => !o)}
         aria-label="Account"
         title={viewer ? `${viewer.name} · ${viewer.org}` : 'Account'}
       >
-        <svg viewBox="0 0 16 16" width="13" height="13">
-          <path
-            d="M10.3 5.7 a2.7 2.7 0 1 0 -3.8 3.8 L2.6 13.4 l0 0 M5 11 l1.4 1.4 M6.9 9.1 l1.4 1.4"
-            stroke="currentColor"
-            strokeWidth="1.4"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <circle cx="10.6" cy="5.4" r="3.1" fill="none" stroke="currentColor" strokeWidth="1.4" />
-        </svg>
+        {viewer ? (
+          <Avatar person={viewer} size={20} />
+        ) : (
+          <svg viewBox="0 0 16 16" width="13" height="13">
+            <path
+              d="M10.3 5.7 a2.7 2.7 0 1 0 -3.8 3.8 L2.6 13.4 l0 0 M5 11 l1.4 1.4 M6.9 9.1 l1.4 1.4"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <circle cx="10.6" cy="5.4" r="3.1" fill="none" stroke="currentColor" strokeWidth="1.4" />
+          </svg>
+        )}
       </button>
       {open && (
         <div className="menu" role="menu">
-          <div className="menu-head">
-            <div className="menu-name">{viewer?.name ?? 'Connected'}</div>
-            <div className="menu-sub">
-              {viewer ? `${viewer.email} · ${viewer.org}` : 'Linear API key active'}
+          <div className="menu-head menu-id-row">
+            {viewer && <Avatar person={viewer} size={26} />}
+            <div>
+              <div className="menu-name">{viewer?.name ?? 'Connected'}</div>
+              <div className="menu-sub">
+                {viewer ? `${viewer.email} · ${viewer.org}` : 'Linear API key active'}
+              </div>
             </div>
           </div>
           <button type="button" className="menu-item is-danger" onClick={onSignOut} role="menuitem">

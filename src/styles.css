@@ -265,8 +265,34 @@ input {
   color: var(--text);
 }
 
+.sync-btn {
+  position: relative;
+}
+
 .sync-btn.is-syncing svg {
   animation: spin 0.9s linear infinite;
+}
+
+.sync-badge {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: live-pulse 2.4s ease-out infinite;
+}
+
+.sync-badge.is-error {
+  background: var(--urgent);
+  animation: none;
+}
+
+.menu-id-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 @keyframes spin {
@@ -909,48 +935,6 @@ button.chip:hover {
   border: 1.6px solid var(--border-strong);
   border-top-color: var(--text-2);
   animation: spin 0.7s linear infinite;
-  flex: none;
-}
-
-.menu-users {
-  min-width: 250px;
-}
-
-.menu-search {
-  width: calc(100% - 10px);
-  margin: 2px 5px 6px;
-  padding: 5px 9px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--bg);
-  outline: none;
-  font-size: 12px;
-}
-
-.menu-search:focus {
-  border-color: var(--border-strong);
-}
-
-.menu-list {
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.menu-user {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-}
-
-.menu-user-name {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.menu-check {
-  color: var(--accent);
   flex: none;
 }
 

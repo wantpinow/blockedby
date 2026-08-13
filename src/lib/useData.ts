@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { MineSnapshot, ProjectSnapshot, ProjectsSnapshot, UsersSnapshot } from '../types'
+import type { MineSnapshot, ProjectSnapshot, ProjectsSnapshot } from '../types'
+import { kvGet } from './idb'
 import {
   AuthError,
   cachedMine,
   cachedProject,
   cachedProjects,
-  cachedUsers,
   fetchMine,
   fetchProject,
   fetchProjects,
-  fetchUsers,
+  fetchViewer,
+  type Viewer,
 } from './linear'
 
 interface Live<T> {
@@ -101,12 +102,27 @@ export function useProjects(): Live<ProjectsSnapshot> {
   )
 }
 
-export function useUsers(): Live<UsersSnapshot> {
-  return useLive<UsersSnapshot>(
-    () => cachedUsers(),
-    () => fetchUsers(),
-    'users',
-  )
+/**
+ * The key's owner. Paints from IDB instantly; upgrades/refreshes in the
+ * background (older cached viewers predate the id/avatar fields).
+ */
+export function useViewer(): Viewer | null {
+  const [viewer, setViewer] = useState<Viewer | null>(null)
+  useEffect(() => {
+    let alive = true
+    kvGet<Partial<Viewer>>('viewer').then((stored) => {
+      if (alive && stored?.id) setViewer(stored as Viewer)
+      fetchViewer()
+        .then((fresh) => {
+          if (alive) setViewer(fresh)
+        })
+        .catch(() => {})
+    })
+    return () => {
+      alive = false
+    }
+  }, [])
+  return viewer
 }
 
 const EMPTY_MINE: MineSnapshot = { fetchedAt: '', userId: '', projectIds: [] }
