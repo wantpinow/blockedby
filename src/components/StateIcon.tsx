@@ -12,7 +12,7 @@ function pie(cx: number, cy: number, r: number, f: number): string {
 /**
  * Linear's visual language, colored by the workspace's own state colors:
  * backlog = dashed ring · todo = ring · started = ring + pie fill ·
- * done = filled check · canceled = filled ×
+ * done = filled check · canceled / duplicate = filled ×
  */
 export function StateIcon({
   state,
@@ -68,6 +68,7 @@ export function StateIcon({
       )
       break
     case 'canceled':
+    case 'duplicate':
       inner = (
         <>
           <circle cx="8" cy="8" r="6.4" fill="currentColor" />

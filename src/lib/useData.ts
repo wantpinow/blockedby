@@ -107,22 +107,38 @@ export function useProjects(): Live<ProjectsSnapshot> {
  * background (older cached viewers predate the id/avatar fields).
  */
 export function useViewer(): Viewer | null {
+  return useViewerState().viewer
+}
+
+/**
+ * The viewer plus whether we've finished looking: `settled` turns true once a
+ * cached viewer paints or the fetch ends, so callers can tell "still loading"
+ * from "there is no viewer".
+ */
+export function useViewerState(): { viewer: Viewer | null; settled: boolean } {
   const [viewer, setViewer] = useState<Viewer | null>(null)
+  const [settled, setSettled] = useState(false)
   useEffect(() => {
     let alive = true
     kvGet<Partial<Viewer>>('viewer').then((stored) => {
-      if (alive && stored?.id) setViewer(stored as Viewer)
+      if (alive && stored?.id) {
+        setViewer(stored as Viewer)
+        setSettled(true)
+      }
       fetchViewer()
         .then((fresh) => {
           if (alive) setViewer(fresh)
         })
         .catch(() => {})
+        .finally(() => {
+          if (alive) setSettled(true)
+        })
     })
     return () => {
       alive = false
     }
   }, [])
-  return viewer
+  return { viewer, settled }
 }
 
 const EMPTY_MINE: MineSnapshot = { fetchedAt: '', userId: '', projectIds: [] }

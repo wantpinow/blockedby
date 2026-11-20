@@ -93,6 +93,7 @@ const ISSUE_PAGE = `
   query ProjectIssues($id: String!, $after: String) {
     project(id: $id) {
       ${PROJECT_FIELDS}
+      projectMilestones(first: 50) { nodes { id name sortOrder } }
       issues(first: 50, after: $after) {
         pageInfo { hasNextPage endCursor }
         nodes {
@@ -104,6 +105,7 @@ const ISSUE_PAGE = `
           relations(first: 25) { nodes { type relatedIssue { id } } }
           inverseRelations(first: 25) { nodes { type issue { id } } }
           parent { id }
+          projectMilestone { id }
         }
       }
     }
@@ -327,6 +329,7 @@ export async function fetchProject(ref: string): Promise<ProjectSnapshot> {
         .filter((x: any) => x.type === 'blocks' && x.issue && inProject.has(x.issue.id))
         .map((x: any) => x.issue.id as string),
       parentId: (i.parent?.id ?? null) as string | null,
+      milestoneId: (i.projectMilestone?.id ?? null) as string | null,
       createdAt: i.createdAt as string,
       updatedAt: i.updatedAt as string,
       startedAt: (i.startedAt ?? null) as string | null,
@@ -340,6 +343,9 @@ export async function fetchProject(ref: string): Promise<ProjectSnapshot> {
     project: projectInfo(meta),
     states,
     issues: transformed,
+    milestones: ((meta.projectMilestones?.nodes ?? []) as any[])
+      .map((m) => ({ id: m.id as string, name: m.name as string, sortOrder: (m.sortOrder ?? 0) as number }))
+      .sort((a, b) => a.sortOrder - b.sortOrder),
   }
   await kvSet(`project-${meta.id}`, snapshot)
   await addAlias(meta.slugId, meta.id)

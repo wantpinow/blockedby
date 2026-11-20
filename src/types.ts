@@ -1,4 +1,5 @@
-export type StateType = 'triage' | 'backlog' | 'unstarted' | 'started' | 'completed' | 'canceled'
+/** Linear's workflow state types; `duplicate` is its own type, closed like `canceled` */
+export type StateType = 'triage' | 'backlog' | 'unstarted' | 'started' | 'completed' | 'canceled' | 'duplicate'
 
 export interface Person {
   id: string
@@ -37,6 +38,8 @@ export interface Issue {
   /** issue ids blocking this issue (edges in) */
   blockedBy: string[]
   parentId: string | null
+  /** project milestone this issue sits in (absent on snapshots cached before milestones) */
+  milestoneId?: string | null
   createdAt: string
   updatedAt: string
   startedAt: string | null
@@ -73,11 +76,19 @@ export interface MineSnapshot {
   projectIds: string[]
 }
 
+export interface Milestone {
+  id: string
+  name: string
+  sortOrder: number
+}
+
 export interface ProjectSnapshot {
   fetchedAt: string
   project: ProjectInfo
   states: Record<string, WorkflowState>
   issues: Issue[]
+  /** in Linear's order (absent on snapshots cached before milestones) */
+  milestones?: Milestone[]
 }
 
 export interface ProjectsSnapshot {

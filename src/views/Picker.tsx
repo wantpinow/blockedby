@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ProjectInfo, TeamInfo } from '../types'
-import { useMine, useNow, useProjects, useViewer } from '../lib/useData'
+import { useMine, useNow, useProjects, useViewerState } from '../lib/useData'
 import { useStored } from '../lib/useStored'
 import { timeAgo } from '../lib/state'
+import { isShortcode, projectIcon, useShortcodes } from '../lib/emoji'
 import { Avatar } from '../components/bits'
+
+/** what the card shows as its percentage; 100 means finished */
+const pct = (p: ProjectInfo) => Math.round(p.progress * 100)
 
 const NO_TEAM: TeamInfo = { id: 'no-team', name: 'No team', key: '·', color: null }
 
@@ -17,12 +21,13 @@ export function Picker({
   accountButton: React.ReactNode
 }) {
   const { data, syncing, error, refresh } = useProjects()
-  const viewer = useViewer()
+  const { viewer, settled: viewerSettled } = useViewerState()
   const now = useNow(30000)
   const [query, setQuery] = useState('')
   const [mineOnly, setMineOnly] = useStored<boolean>('blockedby-mine-only', false)
+  const [hideComplete, setHideComplete] = useStored<boolean>('blockedby-hide-complete', true)
   const [collapsed, setCollapsed] = useStored<string[]>('blockedby-collapsed-teams', [])
-  const { data: mine, syncing: mineSyncing } = useMine(viewer?.id ?? null)
+  const { data: mine, syncing: mineSyncing, error: mineError } = useMine(viewer?.id ?? null)
 
   useEffect(() => {
     document.title = 'blockedBy'
@@ -34,13 +39,23 @@ export function Picker({
     [mineOnly, viewer, mine],
   )
   const mineLoading = mineOnly && viewer !== null && mineSet === null
+  // With "My projects" on, hold the list back until we know which projects are
+  // yours, instead of painting every project and then filtering. Falls back to
+  // the full list only when the filter can't be worked out (no viewer, or the
+  // lookup failed with nothing cached).
+  const mineUnknown = mineOnly && mineSet === null && !(viewerSettled && viewer === null) && !mineError
 
-  const { groups, visibleCount } = useMemo(() => {
+  // the emoji table is its own chunk; fetch it only if some project uses a :shortcode: icon
+  const shortcodes = useShortcodes(!!data?.projects.some((p) => isShortcode(p.icon)))
+
+  const { groups, visibleCount, completeHidden } = useMemo(() => {
     const list = data?.projects ?? []
     const q = query.trim().toLowerCase()
-    const visible = list.filter(
+    const matching = list.filter(
       (p) => (!q || p.name.toLowerCase().includes(q)) && (!mineSet || mineSet.has(p.id)),
     )
+    const visible = hideComplete ? matching.filter((p) => pct(p) < 100) : matching
+    const completeHidden = matching.length - visible.length
     const byTeam = new Map<string, { team: TeamInfo; projects: ProjectInfo[] }>()
     for (const p of visible) {
       // pre-teams cached snapshots lack the field — treat as ungrouped until revalidation lands
@@ -54,8 +69,8 @@ export function Picker({
     const groups = [...byTeam.values()].sort((a, b) =>
       (b.projects[0]?.updatedAt ?? '').localeCompare(a.projects[0]?.updatedAt ?? ''),
     )
-    return { groups, visibleCount: visible.length }
-  }, [data, query, mineSet])
+    return { groups, visibleCount: visible.length, completeHidden }
+  }, [data, query, mineSet, hideComplete])
 
   const searching = query.trim().length > 0
   const isCollapsed = (teamId: string) => !searching && collapsed.includes(teamId)
@@ -76,9 +91,11 @@ export function Picker({
           </svg>
         </span>
         <span className="proj-name">blockedBy</span>
-        <span className="muted small proj-count">
-          {visibleCount} project{visibleCount === 1 ? '' : 's'}
-        </span>
+        {data && !mineUnknown && (
+          <span className="muted small proj-count">
+            {visibleCount} project{visibleCount === 1 ? '' : 's'}
+          </span>
+        )}
         <span className="spacer" />
         {viewer && (
           <button
@@ -96,6 +113,19 @@ export function Picker({
             )}
           </button>
         )}
+        <button
+          type="button"
+          className={`typechip${hideComplete ? ' is-on' : ''}`}
+          onClick={() => setHideComplete((v) => !v)}
+          title={
+            hideComplete
+              ? `Hiding ${completeHidden} project${completeHidden === 1 ? '' : 's'} at 100%. Click to show them.`
+              : 'Hide projects at 100%'
+          }
+        >
+          Hide 100%
+          {hideComplete && completeHidden > 0 && !mineUnknown && <span className="typechip-n">{completeHidden}</span>}
+        </button>
         <input
           className="filter"
           placeholder="Search projects…"
@@ -135,7 +165,8 @@ export function Picker({
             <div className="muted">{error}</div>
           </div>
         )}
-        {groups.map(({ team, projects }) => (
+        {data && mineUnknown && <div className="center-note is-delayed">finding your projects…</div>}
+        {!mineUnknown && groups.map(({ team, projects }) => (
           <section key={team.id} className="team-sec">
             <button
               type="button"
@@ -167,17 +198,25 @@ export function Picker({
             {!isCollapsed(team.id) && (
               <div className="cards">
                 {projects.map((p) => (
-                  <Card key={`${team.id}:${p.id}`} p={p} now={now} onOpen={() => onOpen(p.slugId)} />
+                  <Card key={`${team.id}:${p.id}`} p={p} now={now} shortcodes={shortcodes} onOpen={() => onOpen(p.slugId)} />
                 ))}
               </div>
             )}
           </section>
         ))}
-        {data && visibleCount === 0 && (
+        {data && !mineUnknown && visibleCount === 0 && (
           <div className="empty">
             {mineSet
               ? `No projects with issues assigned to ${viewer?.name}${searching ? ' match the search' : ''}.`
               : 'No projects match.'}
+            {completeHidden > 0 && (
+              <>
+                {' '}
+                <button type="button" className="link-btn" onClick={() => setHideComplete(false)}>
+                  Show {completeHidden} at 100%
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -185,13 +224,24 @@ export function Picker({
   )
 }
 
-function Card({ p, now, onOpen }: { p: ProjectInfo; now: number; onOpen: () => void }) {
+function Card({
+  p,
+  now,
+  shortcodes,
+  onOpen,
+}: {
+  p: ProjectInfo
+  now: number
+  shortcodes: Record<string, string> | null
+  onOpen: () => void
+}) {
+  const glyph = projectIcon(p.icon, shortcodes)
   return (
     <button type="button" className="card" onClick={onOpen}>
       <div className="card-top">
         <span className="proj-dot" style={{ background: p.color }} />
         <span className="card-name">
-          {p.icon ? `${p.icon} ` : ''}
+          {glyph && <span className="card-icon">{glyph}</span>}
           {p.name}
         </span>
         {p.lead && <Avatar person={p.lead} size={18} />}
@@ -204,7 +254,7 @@ function Card({ p, now, onOpen }: { p: ProjectInfo; now: number; onOpen: () => v
       </div>
       <div className="card-meta">
         <span className={`proj-state is-${p.state}`}>{p.state}</span>
-        <span className="muted">{Math.round(p.progress * 100)}%</span>
+        <span className="muted">{pct(p)}%</span>
         <span className="spacer" />
         {p.targetDate && (
           <span className="muted" title="target date">

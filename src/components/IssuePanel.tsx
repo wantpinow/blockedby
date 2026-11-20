@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type { Issue, ProjectSnapshot } from '../types'
-import { stateOf, startedFraction, timeAgo, isActionable } from '../lib/state'
+import { stateOf, startedFraction, timeAgo, isActionable, isDone } from '../lib/state'
 import { useNow } from '../lib/useData'
 import { buildAgentPrompt } from '../lib/agentPrompt'
 import { kvGet } from '../lib/idb'
@@ -190,7 +190,7 @@ export function IssuePanel({
                       issue={b}
                       snap={snap}
                       onOpen={onOpen}
-                      muted={['completed', 'canceled'].includes(stateOf(b, snap).type)}
+                      muted={isDone(stateOf(b, snap).type)}
                     />
                   ))}
                 </div>

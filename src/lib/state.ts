@@ -7,6 +7,7 @@ export const TYPE_LABEL: Record<StateType, string> = {
   started: 'In progress',
   completed: 'Done',
   canceled: 'Canceled',
+  duplicate: 'Duplicate',
 }
 
 /** display order for filters / progress strip */
@@ -17,6 +18,7 @@ export const TYPE_ORDER: StateType[] = [
   'started',
   'completed',
   'canceled',
+  'duplicate',
 ]
 
 const FALLBACK_STATE: WorkflowState = {
@@ -31,8 +33,9 @@ export function stateOf(issue: Issue, snap: ProjectSnapshot): WorkflowState {
   return (issue.stateId && snap.states[issue.stateId]) || FALLBACK_STATE
 }
 
+/** closed for good: finished, dropped, or folded into another issue */
 export function isDone(t: StateType): boolean {
-  return t === 'completed' || t === 'canceled'
+  return t === 'completed' || t === 'canceled' || t === 'duplicate'
 }
 
 /**

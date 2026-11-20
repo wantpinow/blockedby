@@ -103,6 +103,193 @@ input {
   margin-bottom: 6px;
 }
 
+.link-btn {
+  color: var(--linear);
+  font: inherit;
+}
+
+.link-btn:hover {
+  text-decoration: underline;
+}
+
+/* project icon before a card's name */
+.card-icon {
+  display: inline-block;
+  margin-right: 6px;
+  font-size: 14px;
+  line-height: 1;
+  vertical-align: -1px;
+}
+
+/* ————————————————————————————————————————————————— empty board */
+
+.graph-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px 96px;
+  pointer-events: none;
+}
+
+/* a search that matches nothing sits over the dimmed board: soften it further */
+.graph-empty.is-no-matches {
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--bg) 85%, transparent), transparent);
+}
+
+.graph-empty-card {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: min(360px, 100%);
+  padding: 28px 28px 24px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 32px rgba(0, 0, 0, 0.06);
+  animation: empty-rise 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes empty-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+}
+
+.graph-empty-title {
+  margin-top: 16px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.graph-empty-body {
+  margin-top: 6px;
+  max-width: 280px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.graph-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.empty-btn {
+  padding: 6px 13px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--surface);
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.empty-btn:hover {
+  background: var(--hover);
+}
+
+.empty-btn.is-primary {
+  border-color: transparent;
+  color: #fff;
+  background: var(--linear);
+}
+
+.empty-btn.is-primary:hover {
+  background: color-mix(in srgb, var(--linear) 88%, #000);
+}
+
+/* the little board drawing */
+
+.empty-art {
+  overflow: visible;
+}
+
+.ea-card {
+  fill: var(--surface);
+  stroke: var(--border-strong);
+  stroke-width: 1;
+}
+
+.ea-card.is-ghost {
+  fill: none;
+  stroke-dasharray: 3 3;
+}
+
+.ea-dot {
+  fill: none;
+  stroke: var(--text-3);
+  stroke-width: 1.3;
+}
+
+.ea-dot.is-done {
+  fill: color-mix(in srgb, var(--linear) 75%, var(--surface));
+  stroke: none;
+}
+
+.ea-tick {
+  fill: none;
+  stroke: var(--surface);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ea-line {
+  fill: var(--track);
+}
+
+.ea-line.is-faint {
+  opacity: 0.6;
+}
+
+.ea-edge {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 1.2;
+}
+
+.is-no-issues .ea-edge {
+  stroke-dasharray: 3 3;
+}
+
+.ea-badge circle:first-child {
+  fill: var(--text-3);
+  stroke: var(--surface);
+  stroke-width: 3;
+}
+
+.ea-badge.is-all-closed circle:first-child {
+  fill: var(--accent);
+}
+
+.ea-badge.is-no-matches circle:first-child {
+  fill: var(--linear);
+}
+
+.ea-badge path,
+.ea-badge .ea-lens {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* a loading note that only shows up if the wait is long enough to notice */
+.center-note.is-delayed {
+  animation: fade-in 0.2s ease 0.35s both;
+}
+
 .center-note {
   display: flex;
   flex-direction: column;
@@ -360,8 +547,23 @@ input {
   transition: stroke 0.15s ease, opacity 0.15s ease;
 }
 
-.edge.is-settled {
-  opacity: 0.38;
+/* blocker in progress: the blocker's own status color */
+.edge.is-active {
+  stroke: color-mix(in srgb, var(--edge-c, var(--urgent)) 85%, var(--text-3));
+  stroke-width: 1.35;
+}
+
+/* blocker not started: neutral, solid */
+.edge.is-waiting {
+  stroke: var(--text-3);
+  stroke-width: 1.2;
+}
+
+/* blocker done: the relation is history (solid but faint, so bundles stay clean) */
+.edge.is-satisfied {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+  opacity: 0.6;
 }
 
 .edge.is-lit {
@@ -448,6 +650,183 @@ input {
   fill: var(--text-3);
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.lane-band {
+  fill: color-mix(in srgb, var(--surface-2) 55%, transparent);
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.lane.is-odd .lane-band {
+  fill: color-mix(in srgb, var(--surface-2) 30%, transparent);
+}
+
+.lane.is-collapsed .lane-band {
+  fill: none;
+  stroke-dasharray: 4 3;
+}
+
+.lane-label {
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--text);
+}
+
+.lane.is-collapsed .lane-label {
+  font-weight: 500;
+  fill: var(--text-2);
+}
+
+.lane-note {
+  font-size: 10.5px;
+  font-weight: 400;
+  fill: var(--text-3);
+}
+
+/* pastel milestone colors: one hue per milestone, tuned per theme */
+
+.lane.is-hued .lane-band {
+  fill: hsl(var(--lane-h) 80% 96.5%);
+  stroke: hsl(var(--lane-h) 55% 86%);
+}
+
+.lane.is-hued .lane-label {
+  fill: hsl(var(--lane-h) 40% 30%);
+}
+
+.lane.is-hued .lane-note {
+  fill: hsl(var(--lane-h) 20% 52%);
+}
+
+.lane.is-hued.is-collapsed .lane-band {
+  fill: hsl(var(--lane-h) 70% 97.5%);
+  stroke: hsl(var(--lane-h) 45% 84%);
+}
+
+.lane.is-hued.is-collapsed .lane-label {
+  fill: hsl(var(--lane-h) 25% 45%);
+}
+
+.gnode-box.is-tinted {
+  fill: hsl(var(--lane-h) 80% 97.5%);
+  stroke: hsl(var(--lane-h) 50% 82%);
+}
+
+.gnode-stripe,
+.legend-swatch {
+  fill: hsl(var(--lane-h) 60% 68%);
+  background: hsl(var(--lane-h) 60% 68%);
+}
+
+:root[data-theme='dark'] .lane.is-hued .lane-band {
+  fill: hsl(var(--lane-h) 18% 12.5%);
+  stroke: hsl(var(--lane-h) 18% 22%);
+}
+
+:root[data-theme='dark'] .lane.is-hued .lane-label {
+  fill: hsl(var(--lane-h) 65% 80%);
+}
+
+:root[data-theme='dark'] .lane.is-hued .lane-note {
+  fill: hsl(var(--lane-h) 20% 55%);
+}
+
+:root[data-theme='dark'] .lane.is-hued.is-collapsed .lane-band {
+  fill: hsl(var(--lane-h) 14% 11%);
+  stroke: hsl(var(--lane-h) 16% 20%);
+}
+
+:root[data-theme='dark'] .lane.is-hued.is-collapsed .lane-label {
+  fill: hsl(var(--lane-h) 30% 62%);
+}
+
+:root[data-theme='dark'] .gnode-box.is-tinted {
+  fill: hsl(var(--lane-h) 18% 14%);
+  stroke: hsl(var(--lane-h) 22% 28%);
+}
+
+:root[data-theme='dark'] .gnode-stripe,
+:root[data-theme='dark'] .legend-swatch {
+  fill: hsl(var(--lane-h) 55% 62%);
+  background: hsl(var(--lane-h) 55% 62%);
+}
+
+.legend-swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  flex: none;
+}
+
+.legend-controls,
+.legend-milestones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  width: 100%;
+}
+
+.legend-milestones {
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--border);
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  color: var(--text-2);
+}
+
+.toggle:hover {
+  color: var(--text);
+}
+
+.toggle-track {
+  position: relative;
+  width: 22px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--track);
+  transition: background 0.15s ease;
+}
+
+.toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s ease;
+}
+
+.toggle.is-on {
+  color: var(--text);
+}
+
+.toggle.is-on .toggle-track {
+  background: var(--linear);
+}
+
+.toggle.is-on .toggle-knob {
+  transform: translateX(10px);
+}
+
+.hub-badge rect {
+  fill: var(--surface-2);
+  stroke: var(--border-strong);
+  stroke-width: 0.8;
+}
+
+.hub-badge text {
+  font-size: 9px;
+  font-weight: 600;
+  fill: var(--text-2);
 }
 
 .graph-legend {
